@@ -111,22 +111,19 @@ def listar_meses_favoritos():
 def clientes_por_mes(mes):
     if df_rfm.empty:
         return []
-    mes_str = str(mes).strip().lower()
-    df_rfm["mes_favorito"] = df_rfm["mes_favorito"].astype(str)
-    data = df_rfm[df_rfm["mes_favorito"].str.lower() == mes_str]
+    data = df_rfm[df_rfm["mes_favorito"].astype(str).str.lower() == mes.lower()]
     if data.empty:
         return []
     columnas = ["Cliente", "recency", "frequency"]
-    columnas_existentes = [c for c in columnas if c in data.columns]
-    return data[columnas_existentes]
-
+    columnas = [c for c in columnas if c in data.columns]
+    return data[columnas].to_dict(orient="records")
 
 
 # ======================================================
 # 🔹 UI — INTERFAZ PRINCIPAL STREAMLIT
 # ======================================================
 
-st.title("📊 Panel de Predicción y Análisis de Clientes")
+st.title(" Predicción y Análisis de Clientes")
 
 st.markdown("---")
 
@@ -134,18 +131,131 @@ st.markdown("---")
 # 🔹 SECCIÓN 1 — Predicción Lineal
 # ======================================================
 
-st.header("📈 Predicción Lineal")
+# st.header("📈 Predicción Lineal")
 
-x_input = st.number_input("Meses a predecir desde Julio 2025", step=1.0)
+# x_input = st.number_input("Meses a predecir desde Julio 2025", step=1.0)
 
-if st.button("Predecir"):
-    y = predict_value(x_input + 31)
-    if y is not None:
-        st.success(f"Resultado: y = {y:.4f}")
-    else:
-        st.error("No se pudo cargar el modelo.")
+# if st.button("Predecir"):
+#     y = predict_value(x_input + 31)
+#     if y is not None:
+#         st.success(f"Resultado: y = {y:.4f}")
+#     else:
+#         st.error("No se pudo cargar el modelo.")
 
-st.markdown("---")
+# st.markdown("---")
+
+# ======================================================
+# 🔹 SECCIÓN — Gráfico de Regresión + Predicción
+# ======================================================
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+st.header("📊 Gráfico del Modelo + Predicción")
+
+try:
+    # === Cargar el archivo Excel original ===
+    df = pd.read_excel("MachineLearning.xlsx")
+
+    # Asegurar datetime
+    df['Fecha'] = pd.to_datetime(df['Fecha'])
+
+    # Indexar y resamplear mensual
+    df_indexed = df.set_index('Fecha')
+    df = df_indexed['Vlr Total'].resample('ME').sum().to_frame()
+    df.index.name = 'Fecha'
+
+    # === LIMPIEZA DE OUTLIERS POR IQR ===
+    Q1 = df['Vlr Total'].quantile(0.25)
+    Q3 = df['Vlr Total'].quantile(0.75)
+    IQR = Q3 - Q1
+
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+
+    df_replaced = df.copy()
+
+    for i in range(len(df)):
+        valor = df.iloc[i, 0]
+
+        # Si es outlier ⇒ reemplazar por promedio de vecinos
+        if valor < lower_bound or valor > upper_bound:
+            vecinos_idx = [j for j in range(i-3, i+4) if j != i and 0 <= j < len(df)]
+            promedio_vecinos = df.iloc[vecinos_idx, 0].mean()
+            df_replaced.iloc[i, 0] = promedio_vecinos
+
+    df = df_replaced.copy()
+
+except Exception as e:
+    st.error(f"No se pudo cargar MachineLearning.xlsx: {e}")
+    df = None
+
+# Si falló la carga, no continuar
+if df is None or df.empty:
+    st.stop()
+
+# Asegurar modelo cargado
+if m is None or b is None:
+    st.error("El modelo dentro de MachineLearning.joblib no se pudo cargar.")
+    st.stop()
+
+# ======================================================
+# 🔹 Construcción del gráfico
+# ======================================================
+
+# Crear variable tiempo
+df["Tiempo"] = np.arange(len(df))
+
+# Input de mes futuro
+meses_futuros = st.number_input("Meses a predecir hacia adelante:", min_value=1, value=6)
+
+# Punto X futuro
+x_future = df["Tiempo"].max() + meses_futuros
+y_future = m * x_future + b
+
+# Fecha futura equivalente
+ultima_fecha = df.index[-1]
+fecha_future = ultima_fecha + pd.DateOffset(months=meses_futuros)
+
+# Extender valores del modelo
+tiempo_extendido = np.append(df["Tiempo"].values, x_future)
+y_extendido = m * tiempo_extendido + b
+
+# Fechas extendidas
+fechas_ext = list(df.index) + [fecha_future]
+
+# ============================
+# GRAFICAR
+# ============================
+
+fig, ax = plt.subplots(figsize=(14, 5))
+
+# Datos reales
+ax.plot(df.index, df["Vlr Total"], marker="o", linewidth=2, label="Datos reales")
+
+# Línea extendida
+ax.plot(fechas_ext, y_extendido, linestyle="--", linewidth=2, color="orange",
+        label="Regresión lineal extendida")
+
+# Punto futuro
+ax.scatter([fecha_future], [y_future], color="red", s=150,
+           label=f"Predicción ({fecha_future.date()})")
+
+ax.set_xlabel("Fecha")
+ax.set_ylabel("Valor Total")
+ax.set_title("Datos Originales + Modelo Extendido hasta la Predicción")
+
+plt.xticks(rotation=45)
+ax.legend()
+plt.tight_layout()
+
+st.pyplot(fig)
+
+# Mostrar valor predicho
+st.success(f"📌 Predicción para {fecha_future.date()}: **{y_future:,.0f}**")
+
+
 
 # ======================================================
 # 🔹 SECCIÓN 2 — Consulta de Clientes
@@ -227,7 +337,6 @@ else:
     st.warning("No hay meses favoritos registrados.")
 
 st.markdown("---")
-
 
 
 
