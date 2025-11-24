@@ -304,22 +304,42 @@ else:
 st.markdown("---")
 
 
+#########################
+# EXPLICAICÓN CLUSTERS
+#########################
+st.subheader("🧩 Interpretación de Clusters")
+
+st.write("""
+**Cluster 0 — Clientes activos de bajo valor:**  
+Son clientes activos pero poco valiosos; compran poco, gastan poco y no vuelven tan frecuentemente. Probablemente clientes de volumen bajo, estables pero no estratégicos.
+
+**Cluster 1 — Clientes casi perdidos / inactivos:**  
+Clientes prácticamente perdidos, inactivos, con muy bajo gasto y baja frecuencia. Requieren campañas de recuperación o dejarlos ir.
+
+**Cluster 2 — Clientes VIP / súper valiosos:**  
+Son los clientes más importantes, de alto impacto económico. Volumen gigante, reciente y constante. Requieren estrategias premium y trato especial.
+
+**Cluster 3 — Clientes regulares de valor medio-alto:**  
+Clientes buenos, compran consistentemente y gastan más que los comunes, pero no llegan a ser VIP. Ideales para estrategias de fidelización para que suban a Cluster 2.
+
+**Cluster 4 — Clientes muy recientes y ultra intensivos, devoluciones:**  
+Clientes hiperactivos: súper recientes, súper frecuentes y muy valiosos, pero con altísimas devoluciones; posible insatisfacción o fallas en el proceso.
+""")
+
+
 ##########################
 # Imágen clusters
 ###############################
 
 from PIL import Image
-import streamlit as st
+
 
 # Cargar imagen (debe estar en la misma carpeta que el streamlit_app.py)
 imagen_descargar = Image.open("descargar.png")
 
 # Mostrarla en la app
-st.image(imagen_descargar, use_container_width=True)
 
-
-
-
+st.image(imagen_descargar, width='stretch')
 
 
 
