@@ -111,12 +111,19 @@ def listar_meses_favoritos():
 def clientes_por_mes(mes):
     if df_rfm.empty:
         return []
-    data = df_rfm[df_rfm["mes_favorito"].astype(str).str.lower() == mes.lower()]
+
+    mes = str(mes).lower()   # 🔥 FIX FINAL
+
+    data = df_rfm[df_rfm["mes_favorito"].astype(str).str.lower() == mes]
+
     if data.empty:
         return []
+
     columnas = ["Cliente", "recency", "frequency"]
     columnas = [c for c in columnas if c in data.columns]
+
     return data[columnas].to_dict(orient="records")
+
 
 
 # ======================================================
