@@ -303,6 +303,28 @@ else:
 
 st.markdown("---")
 
+
+##########################
+# Imágen clusters
+###############################
+
+from PIL import Image
+import streamlit as st
+
+# Cargar imagen (debe estar en la misma carpeta que el streamlit_app.py)
+imagen_descargar = Image.open("descargar.png")
+
+# Mostrarla en la app
+st.image(imagen_descargar, use_container_width=True)
+
+
+
+
+
+
+
+
+
 # ======================================================
 # 🔹 PERFIL DE CLUSTERS
 # ======================================================
@@ -344,6 +366,7 @@ else:
     st.warning("No hay meses favoritos registrados.")
 
 st.markdown("---")
+
 
 
 
